@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Terminal</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        #terminal {
+            background-color: #000000;
+            padding: 20px;
+            border-radius: 5px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        #output {
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+
+        #input-line {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        #prompt {
+            color: #00ff00;
+            margin-right: 10px;
+        }
+
+        #command-input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        .command {
+            color: #00ff00;
+            margin-bottom: 5px;
+        }
+
+        .response {
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        .ascii-art {
+            color: #00ff00;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output">   ________  __                   __     
+  / ____/ / / /___ ___  ______  / /____ 
+ / /   / / / / __ `/ / / / __ \\/ / ___/ 
+/ /___/ /_/ / /_/ / /_/ / / / / (__  )  
+\\____/\\____/\\__,_/\\__,_/_/ /_/_/____/   
+===========================================
+    Anthropic's AI Assistant - v3.5
+===========================================
+
+Welcome to Claude Terminal [Version 1.0]
+Copyright (c) 2024 Anthropic. All rights reserved.
+
+Type 'help' to see available commands.
+        </div>
+        <div id="input-line">
+            <span id="prompt">claude>&nbsp;</span>
+            <input type="text" id="command-input" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const commandInput = document.getElementById('command-input');
+        const output = document.getElementById('output');
+        const terminal = document.getElementById('terminal');
+
+        const asciiArt = {
+            logo: `
+          /\\
+         /  \\
+        /    \\
+       /  /\\  \\
+      /  /  \\  \\
+     /  /    \\  \\
+    /__/      \\__\\
+    \\  \\      /  /
+     \\  \\    /  /
+      \\  \\  /  /
+       \\  \\/  /
+        \\    /
+         \\  /
+          \\/
+`,
+            terminal: `
+    .-------------------.
+    |  .--------------. |
+    |  |   CLAUDE    | |
+    |  |    3.5      | |
+    |  |   SONNET    | |
+    |  |             | |
+    |  |  ANTHROPIC  | |
+    |  '--------------' |
+    '-------------------'
+`,
+            brain: `
+      .---.
+     /'   |\\
+    |   __||
+    |  |   |
+    |  |   |
+    |  |   |
+    |  |   |
+     \\  '--'
+      \`---'
+`,
+            robot: `
+     .-----.
+    /       \\
+   |  O   O  |
+   |    ^    |
+    \\ \\___/ /
+     \`-----'
+`
+        };
+
+        const commands = {
+            help: `Available commands:
+  help       - Show this help message
+  about      - Display information about Claude
+  clear      - Clear the terminal screen
+  version    - Show Claude version information
+  features   - List Claude's main features
+  examples   - Show example use cases
+  credits    - Show credits and acknowledgments
+  ascii      - Show available ASCII art
+  logo       - Show Claude logo
+  terminal   - Show terminal ASCII art
+  brain      - Show brain ASCII art
+  robot      - Show robot ASCII art`,
+
+            about: `Claude is an advanced AI assistant created by Anthropic.
+Current Version: Claude 3.5 Sonnet
+Release Date: 2024
+Language Models: Large Language Model (LLM)
+Training: Trained on diverse datasets with focus on safety and ethics
+Purpose: To assist humans with various tasks while maintaining high ethical standards`,
+
+            version: `Claude Version Information:
+Model: Claude 3.5 Sonnet
+Release: 2024
+Framework: Constitutional AI
+Last Updated: April 2024
+Status: Active`,
+
+            features: `Claude's Main Features:
+1. Natural Language Processing
+   - Advanced text understanding and generation
+   - Multi-language support
+   - Context awareness
+
+2. Programming and Technical Skills
+   - Code generation and debugging
+   - Multiple programming language support
+   - Technical documentation
+
+3. Creative Abilities
+   - Writing and content creation
+   - Story and narrative generation
+   - Creative problem-solving
+
+4. Analytical Capabilities
+   - Data analysis
+   - Mathematical computations
+   - Logical reasoning
+
+5. Safety and Ethics
+   - Built-in safety measures
+   - Ethical decision-making
+   - Transparent communication`,
+
+            examples: `Example Use Cases:
+1. Writing and Editing
+   > Document creation and editing
+   > Content optimization
+   > Grammar and style checking
+
+2. Programming
+   > Code generation
+   > Debugging assistance
+   > Technical documentation
+
+3. Analysis
+   > Data interpretation
+   > Problem-solving
+   > Mathematical calculations
+
+4. Education
+   > Tutoring and explanations
+   > Concept clarification
+   > Learning assistance`,
+
+            credits: `Credits and Acknowledgments:
+Created by: Anthropic
+Model: Claude 3.5 Sonnet
+Year: 2024
+
+Special thanks to:
+- Anthropic Research Team
+- AI Safety Researchers
+- Contributing Engineers
+- User Community`,
+
+            ascii: `Available ASCII art commands:
+- logo     : Show Claude logo
+- terminal : Show terminal design
+- brain    : Show brain symbol
+- robot    : Show robot face`,
+
+            clear: null
+        };
+
+        function processCommand(command) {
+            const cmd = command.toLowerCase().trim();
+            
+            if (cmd === '') return;
+
+            const commandDiv = document.createElement('div');
+            commandDiv.className = 'command';
+            commandDiv.textContent = `claude> ${command}`;
+            output.appendChild(commandDiv);
+
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'response';
+
+            if (cmd === 'clear') {
+                output.innerHTML = '';
+                return;
+            }
+
+            if (asciiArt.hasOwnProperty(cmd)) {
+                responseDiv.className = 'ascii-art';
+                responseDiv.textContent = asciiArt[cmd];
+            } else if (commands.hasOwnProperty(cmd)) {
+                responseDiv.textContent = commands[cmd];
+            } else {
+                responseDiv.className = 'error';
+                responseDiv.textContent = `Error: '${cmd}' is not recognized as a valid command. Type 'help' for available commands.`;
+            }
+
+            output.appendChild(responseDiv);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        commandInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value;
+                processCommand(command);
+                this.value = '';
+            }
+        });
+
+        // Keep focus on input
+        document.addEventListener('click', function() {
+            commandInput.focus();
+        });
+    </script>
+</body>
+</html>
